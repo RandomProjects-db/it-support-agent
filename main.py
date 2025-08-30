@@ -174,6 +174,10 @@ def update_ticket(ticket_id: int, update: TicketUpdate):
 
 @app.post("/api/chat")
 def chat_with_agent(chat: ChatMessage):
+    # Check if user wants to create a ticket
+    create_ticket_keywords = ["create ticket", "new ticket", "make ticket", "submit ticket"]
+    should_create_ticket = any(keyword in chat.message.lower() for keyword in create_ticket_keywords)
+    
     # Find relevant policies
     relevant_policies = []
     for policy in policies:
@@ -226,12 +230,50 @@ Response Format:
     
     ai_response = call_groq_api(messages)
     
-    return {
+    # Create ticket if requested
+    created_ticket = None
+    if should_create_ticket:
+        # Extract issue from the message (remove "create ticket" part)
+        issue_description = chat.message
+        for keyword in create_ticket_keywords:
+            issue_description = issue_description.lower().replace(keyword, "").strip()
+        
+        if not issue_description:
+            issue_description = "IT support request from chat"
+        
+        # Create the ticket
+        new_ticket = {
+            "id": len(tickets) + 1,
+            "title": f"Chat Request: {issue_description[:50]}...",
+            "description": chat.message,
+            "user_email": "chat-user@company.com",
+            "status": "new",
+            "priority": "medium",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "assigned_to": None,
+            "ai_analysis": ai_response
+        }
+        
+        tickets.append(new_ticket)
+        save_tickets()
+        created_ticket = new_ticket
+    
+    response_data = {
         "response": ai_response,
         "relevant_policies": relevant_policies,
         "similar_cases": len(similar_tickets),
         "timestamp": datetime.now().isoformat()
     }
+    
+    if created_ticket:
+        response_data["ticket_created"] = {
+            "id": created_ticket["id"],
+            "title": created_ticket["title"],
+            "message": f"✅ Ticket #{created_ticket['id']} created successfully!"
+        }
+    
+    return response_data
 
 @app.get("/api/policies")
 def get_policies():
