@@ -2,6 +2,10 @@
 
 AI-powered IT support ticket management system with intelligent policy consultation and automated troubleshooting assistance.
 
+## 🎥 Demo Video
+
+**[Watch Live Demo](https://www.youtube.com/watch?v=3m9ieKRyR-I)** - See the AI agent in action with ticket management, chat interface, and policy consultation.
+
 ## Features
 
 🎫 **Ticket Management**
